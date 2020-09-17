@@ -213,6 +213,12 @@ bool PkUpdates::isOnBattery() const
     return m_isOnBattery;
 }
 
+bool PkUpdates::lastCheckSuccessful() const
+{
+    qCDebug(PLASMA_PK_UPDATES) << "Last check successful:" << m_lastCheckSuccessful;
+    return m_lastCheckSuccessful;
+}
+
 void PkUpdates::getUpdateDetails(const QString &pkgID)
 {
     qCDebug(PLASMA_PK_UPDATES) << "Requesting update details for" << pkgID;
@@ -390,6 +396,7 @@ void PkUpdates::onFinished(PackageKit::Transaction::Exit status, uint runtime)
                 "finished with status" << PackageKit::Daemon::enumToString<PackageKit::Transaction>((int)status, "Exit") <<
                 "in" << runtime/1000 << "seconds";
 
+    bool oldLastCheckSuccessful = m_lastCheckSuccessful;
     if (trans->role() == PackageKit::Transaction::RoleRefreshCache) {
         m_lastCheckSuccessful = status == PackageKit::Transaction::ExitSuccess; 
 
@@ -474,6 +481,10 @@ void PkUpdates::onFinished(PackageKit::Transaction::Exit status, uint runtime)
         qCDebug(PLASMA_PK_UPDATES) << "Unhandled transaction type:" << PackageKit::Daemon::enumToString<PackageKit::Transaction>(trans->role(), "Role");
         setActivity(Idle);
         return;
+    }
+
+    if (oldLastCheckSuccessful != m_lastCheckSuccessful) {
+        emit lastCheckSuccessfulChanged();
     }
 
     setActivity(Idle);
